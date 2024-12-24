@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pickup Code Extractor & Barcode Generator</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .input-section {
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e4e8;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            resize: vertical;
+            font-size: 16px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #ff4b6b, #ff6b6b);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(255, 75, 107, 0.2);
+        }
+
+        #barcodeContainer {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .barcode-item {
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            text-align: center;
+        }
+
+        .barcode-item svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .code-text {
+            color: #4a90e2;
+            font-size: 18px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn-generate {
+            background: linear-gradient(135deg, #ff4b6b, #ff6b6b);
+        }
+
+        .btn-clear {
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+
+        .alarm-modal {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2000;
+            min-width: 300px;
+            max-width: 80%;
+            padding: 2px;
+            border-radius: 50px;
+        }
+
+        .alarm-content {
+            background: white;
+            padding: 15px 30px;
+            border-radius: 48px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            color: #2B2E8C;
+            box-shadow: 0 4px 15px rgba(43, 46, 140, 0.2);
+            z-index: 2001;
+        }
+
+        .alarm-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .alarm-success {
+            background: linear-gradient(135deg, #2B2E8C, #1E1B4B);
+        }
+
+        .alarm-error {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+        }
+
+        .alarm-warning {
+            background: linear-gradient(135deg, #ffc107, #e0a800);
+        }
+
+        .alarm-info {
+            background: linear-gradient(135deg, #2B2E8C, #1E1B4B);
+        }
+
+        .alarm-success .alarm-icon {
+            color: #2B2E8C;
+            background: white;
+        }
+
+        .alarm-error .alarm-icon {
+            color: #dc3545;
+            background: white;
+        }
+
+        .alarm-warning .alarm-icon {
+            color: #ffc107;
+            background: white;
+        }
+
+        .alarm-info .alarm-icon {
+            color: #2B2E8C;
+            background: white;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -20px);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translate(-50%, -20px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="input-section">
+            <textarea id="inputText" rows="4" placeholder="粘貼取件資訊在這裡..."></textarea>
+            <div class="button-group">
+                <button class="btn-generate" onclick="processText()">生成條碼</button>
+                <button class="btn-clear" onclick="clearAll()">清空全部</button>
+            </div>
+        </div>
+        <div id="barcodeContainer"></div>
+    </div>
+
+    <script>
+        function extractPickupCode(text) {
+            const match = text.match(/取件碼\s*(\d+)/);
+            return match ? match[1] : null;
+        }
+
+        // Add paste event listener to textarea
+        document.getElementById('inputText').addEventListener('paste', function(e) {
+            // Short delay to ensure pasted content is available
+            setTimeout(() => {
+                processText();
+            }, 100);
+        });
+
+        function processText() {
+            const input = document.getElementById('inputText').value;
+            const messages = input.split('\n').filter(line => line.trim());
+            
+            const container = document.getElementById('barcodeContainer');
+            container.innerHTML = '';
+
+            messages.forEach(message => {
+                const code = extractPickupCode(message);
+                if (code) {
+                    const barcodeItem = document.createElement('div');
+                    barcodeItem.className = 'barcode-item';
+                    
+                    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                    barcodeItem.appendChild(svg);
+                    
+                    JsBarcode(svg, code, {
+                        format: "CODE128",
+                        width: 2,
+                        height: 100,
+                        displayValue: true,
+                        fontSize: 20,
+                        margin: 10
+                    });
+
+                    const div = document.createElement('div');
+                    div.className = 'code-text';
+                    div.textContent = `取件碼: ${code}`;
+                    barcodeItem.appendChild(div);
+                    
+                    container.appendChild(barcodeItem);
+                }
+            });
+
+            if (messages.some(message => extractPickupCode(message))) {
+                showAlarm('條碼生成成功', 'success');
+            } else {
+                showAlarm('未找到有效的取件碼', 'error');
+            }
+        }
+
+        function clearAll() {
+            document.getElementById('inputText').value = '';
+            document.getElementById('barcodeContainer').innerHTML = '';
+            showAlarm('已清空所有內容', 'info');
+        }
+
+        function showAlarm(message, type = 'info', duration = 3000) {
+            const existingAlarm = document.querySelector('.alarm-modal');
+            if (existingAlarm) {
+                existingAlarm.remove();
+            }
+
+            const alarmModal = document.createElement('div');
+            alarmModal.className = `alarm-modal alarm-${type}`;
+
+            const content = document.createElement('div');
+            content.className = 'alarm-content';
+
+            const icon = document.createElement('span');
+            icon.className = 'alarm-icon';
+            
+            // Updated icon characters
+            switch (type) {
+                case 'success':
+                    icon.textContent = '✓';
+                    break;
+                case 'error':
+                    icon.textContent = '✕';
+                    break;
+                case 'warning':
+                    icon.textContent = '!';
+                    break;
+                default:
+                    icon.textContent = 'i';
+            }
+
+            const text = document.createElement('span');
+            text.textContent = message;
+            text.style.color = 'black';  // Make text white for better contrast
+
+            content.appendChild(icon);
+            content.appendChild(text);
+            alarmModal.appendChild(content);
+            document.body.appendChild(alarmModal);
+
+            alarmModal.style.animation = 'slideDown 0.5s ease-out';
+
+            setTimeout(() => {
+                alarmModal.style.animation = 'fadeOut 0.5s ease-out';
+                setTimeout(() => {
+                    alarmModal.remove();
+                }, 500);
+            }, duration);
+        }
+    </script>
+</body>
+</html> 
+
