@@ -4,7 +4,6 @@
     <title>拼多多取件</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Permissions-Policy" content="clipboard-read=*, clipboard-write=*">
     <style>
         * {
             box-sizing: border-box;
@@ -224,7 +223,7 @@
             <div class="button-group">
                 <button class="btn-generate" onclick="processText()">生成條碼</button>
                 <button class="btn-clear" onclick="clearAll()">清空全部</button>
-                <button class="btn-paste" onclick="pasteFromClipboard()">貼上</button>
+                <!-- <button class="btn-paste" onclick="pasteFromClipboard()">貼上</button> -->
             </div>
         </div>
         <div id="barcodeContainer"></div>
@@ -238,10 +237,8 @@
 
         // Add paste event listener to textarea
         document.getElementById('inputText').addEventListener('paste', function(e) {
-            // Short delay to ensure pasted content is available
-            setTimeout(() => {
-                processText();
-            }, 100);
+            // 立即處理貼上的內容
+            setTimeout(processText, 0);
         });
 
         function processText() {
@@ -341,43 +338,58 @@
         }
 
         async function pasteFromClipboard() {
-            if (!navigator.clipboard) {
-                showAlarm('您的瀏覽器不支持剪貼簿功能，請手動貼上', 'warning');
-                return;
-            }
-
             try {
-                // First try to request permission explicitly
-                const permissionResult = await navigator.permissions.query({
-                    name: 'clipboard-read'
-                }).catch(() => ({ state: 'denied' }));
-
-                if (permissionResult.state === 'denied') {
-                    showAlarm('請使用鍵盤快捷鍵 Ctrl+V 來貼上', 'info');
-                    return;
+                // 首先嘗試使用 navigator.clipboard API
+                if (navigator.clipboard) {
+                    try {
+                        const text = await navigator.clipboard.readText();
+                        if (text) {
+                            const textarea = document.getElementById('inputText');
+                            textarea.value = text;
+                            processText();
+                            showAlarm('已貼上內容', 'success');
+                            return;
+                        }
+                    } catch (err) {
+                        // 如果 clipboard API 失敗，靜默失敗並使用替代方案
+                        console.log('Clipboard API not available, using fallback');
+                    }
                 }
 
-                const text = await navigator.clipboard.readText();
+                // 替代方案：使用 execCommand
                 const textarea = document.getElementById('inputText');
-                textarea.value = text;
-                processText();
-                showAlarm('已從剪貼簿貼上內容', 'success');
+                textarea.focus();
+                document.execCommand('paste');
+                
+                // 短暫延遲以確保內容已被貼上
+                setTimeout(() => {
+                    if (textarea.value) {
+                        processText();
+                        showAlarm('已貼上內容', 'success');
+                    } else {
+                        showAlarm('請使用 Ctrl+V / Command+V 快捷鍵貼上', 'info');
+                    }
+                }, 100);
+
             } catch (err) {
-                console.error('Clipboard error:', err);
-                
-                // Provide alternative instructions
-                showAlarm('請使用鍵盤快捷鍵 Ctrl+V 來貼上', 'info');
-                
-                // Focus the textarea to make it easier for users to paste
+                console.error('Paste error:', err);
+                showAlarm('請直接在輸入框中貼上內容', 'info');
                 document.getElementById('inputText').focus();
             }
         }
 
-        // Add this function to handle keyboard shortcuts
+        // 優化貼上事件處理
+        document.getElementById('inputText').addEventListener('paste', (e) => {
+            // 使用 requestAnimationFrame 來確保在下一幀處理
+            requestAnimationFrame(() => {
+                processText();
+            });
+        });
+
+        // 支持快捷鍵貼上
         document.addEventListener('keydown', function(e) {
-            // Check if Ctrl+V is pressed
-            if (e.ctrlKey && e.key === 'v') {
-                // Focus textarea if it's not already focused
+            // 支持 Windows (Ctrl+V) 和 Mac (Command+V)
+            if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
                 const textarea = document.getElementById('inputText');
                 if (document.activeElement !== textarea) {
                     textarea.focus();
