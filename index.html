@@ -4,6 +4,7 @@
     <title>拼多多取件</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Permissions-Policy" content="clipboard-read=*, clipboard-write=*">
     <style>
         * {
             box-sizing: border-box;
@@ -340,17 +341,49 @@
         }
 
         async function pasteFromClipboard() {
+            if (!navigator.clipboard) {
+                showAlarm('您的瀏覽器不支持剪貼簿功能，請手動貼上', 'warning');
+                return;
+            }
+
             try {
+                // First try to request permission explicitly
+                const permissionResult = await navigator.permissions.query({
+                    name: 'clipboard-read'
+                }).catch(() => ({ state: 'denied' }));
+
+                if (permissionResult.state === 'denied') {
+                    showAlarm('請使用鍵盤快捷鍵 Ctrl+V 來貼上', 'info');
+                    return;
+                }
+
                 const text = await navigator.clipboard.readText();
                 const textarea = document.getElementById('inputText');
                 textarea.value = text;
                 processText();
                 showAlarm('已從剪貼簿貼上內容', 'success');
             } catch (err) {
-                showAlarm('無法訪問剪貼簿，請確保已授予權限', 'error');
-                console.error('Failed to read clipboard:', err);
+                console.error('Clipboard error:', err);
+                
+                // Provide alternative instructions
+                showAlarm('請使用鍵盤快捷鍵 Ctrl+V 來貼上', 'info');
+                
+                // Focus the textarea to make it easier for users to paste
+                document.getElementById('inputText').focus();
             }
         }
+
+        // Add this function to handle keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Check if Ctrl+V is pressed
+            if (e.ctrlKey && e.key === 'v') {
+                // Focus textarea if it's not already focused
+                const textarea = document.getElementById('inputText');
+                if (document.activeElement !== textarea) {
+                    textarea.focus();
+                }
+            }
+        });
     </script>
 </body>
 </html> 
