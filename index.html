@@ -1,16 +1,17 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
+    <meta charset="UTF-8"/>
     <title>拼多多取件</title>
+    <!-- 請勿移除或更改 JsBarcode CDN 位置，否則會導致條碼無法生成！ -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <style>
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
-
         body {
             font-family: Arial, sans-serif;
             background-color: #f0f2f5;
@@ -20,14 +21,12 @@
             min-height: 100vh;
             padding: 20px;
         }
-
         .container {
             width: 100%;
             max-width: 600px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 80px 20px 20px 20px;
         }
-
         .input-section {
             background: white;
             padding: 20px;
@@ -36,7 +35,6 @@
             margin-bottom: 20px;
             text-align: center;
         }
-
         textarea {
             width: 100%;
             padding: 15px;
@@ -46,7 +44,6 @@
             resize: vertical;
             font-size: 16px;
         }
-
         button {
             background: linear-gradient(135deg, #ff4b6b, #ff6b6b);
             color: white;
@@ -57,12 +54,10 @@
             font-size: 16px;
             transition: transform 0.2s;
         }
-
         button:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(255, 75, 107, 0.2);
         }
-
         #barcodeContainer {
             width: 100%;
             display: flex;
@@ -70,7 +65,6 @@
             align-items: center;
             gap: 20px;
         }
-
         .barcode-item {
             background: white;
             padding: 20px;
@@ -79,52 +73,42 @@
             width: 100%;
             text-align: center;
         }
-
         .barcode-item svg {
             max-width: 100%;
             height: auto;
         }
-
         .code-text {
             color: #4a90e2;
             font-size: 18px;
             margin-top: 10px;
             font-weight: bold;
         }
-
         .button-group {
             display: flex;
             gap: 10px;
             justify-content: center;
         }
-
         .btn-generate {
             background: linear-gradient(135deg, #ff4b6b, #ff6b6b);
         }
-
         .btn-clear {
             background: linear-gradient(135deg, #4a90e2, #357abd);
         }
-
         .btn-paste {
             background: linear-gradient(135deg, #34c759, #2fb344);
         }
-
         @media (max-width: 480px) {
             .container {
-                padding: 10px;
+                padding: 80px 20px 20px 20px;
             }
-
             button {
                 width: 100%;
             }
-
             .button-group {
                 flex-direction: column;
                 gap: 10px;
             }
         }
-
         .alarm-modal {
             position: fixed;
             top: 20px;
@@ -136,7 +120,6 @@
             padding: 2px;
             border-radius: 50px;
         }
-
         .alarm-content {
             background: white;
             padding: 15px 30px;
@@ -149,7 +132,6 @@
             box-shadow: 0 4px 15px rgba(43, 46, 140, 0.2);
             z-index: 2001;
         }
-
         .alarm-icon {
             width: 24px;
             height: 24px;
@@ -160,43 +142,34 @@
             font-weight: bold;
             font-size: 16px;
         }
-
         .alarm-success {
             background: linear-gradient(135deg, #2B2E8C, #1E1B4B);
         }
-
         .alarm-error {
             background: linear-gradient(135deg, #dc3545, #c82333);
         }
-
         .alarm-warning {
             background: linear-gradient(135deg, #ffc107, #e0a800);
         }
-
         .alarm-info {
             background: linear-gradient(135deg, #2B2E8C, #1E1B4B);
         }
-
         .alarm-success .alarm-icon {
             color: #2B2E8C;
             background: white;
         }
-
         .alarm-error .alarm-icon {
             color: #dc3545;
             background: white;
         }
-
         .alarm-warning .alarm-icon {
             color: #ffc107;
             background: white;
         }
-
         .alarm-info .alarm-icon {
             color: #2B2E8C;
             background: white;
         }
-
         @keyframes slideDown {
             from {
                 opacity: 0;
@@ -207,7 +180,6 @@
                 transform: translate(-50%, 0);
             }
         }
-
         @keyframes fadeOut {
             to {
                 opacity: 0;
@@ -230,33 +202,34 @@
     </div>
 
     <script>
+        // 1. 解析 取件碼
         function extractPickupCode(text) {
             const match = text.match(/取件码\s*(\d+)/);
             return match ? match[1] : null;
         }
 
-        // Add paste event listener to textarea
-        document.getElementById('inputText').addEventListener('paste', function(e) {
-            // 立即處理貼上的內容
-            setTimeout(processText, 0);
-        });
-
+        // 2. 主流程：生成條碼
         function processText() {
             const input = document.getElementById('inputText').value;
-            const messages = input.split('\n').filter(line => line.trim());
-            
+            const lines = input.split('\n').filter(line => line.trim());
             const container = document.getElementById('barcodeContainer');
             container.innerHTML = '';
 
-            messages.forEach(message => {
+            let foundAnyCode = false;
+
+            lines.forEach(message => {
                 const code = extractPickupCode(message);
                 if (code) {
+                    foundAnyCode = true;
+                    // 建立條碼容器
                     const barcodeItem = document.createElement('div');
                     barcodeItem.className = 'barcode-item';
-                    
+
+                    // 建立 SVG 區域
                     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
                     barcodeItem.appendChild(svg);
-                    
+
+                    // 生成條碼
                     JsBarcode(svg, code, {
                         format: "CODE128",
                         width: 2,
@@ -266,34 +239,65 @@
                         margin: 10
                     });
 
+                    // 顯示取件碼文字
                     const div = document.createElement('div');
                     div.className = 'code-text';
                     div.textContent = `取件碼: ${code}`;
                     barcodeItem.appendChild(div);
-                    
+
                     container.appendChild(barcodeItem);
                 }
             });
 
-            if (messages.some(message => extractPickupCode(message))) {
+            if (foundAnyCode) {
                 showAlarm('條碼生成成功', 'success');
             } else {
                 showAlarm('未找到有效的取件碼', 'error');
             }
         }
 
+        // 3. 清除全部內容
         function clearAll() {
             document.getElementById('inputText').value = '';
             document.getElementById('barcodeContainer').innerHTML = '';
             showAlarm('已清空所有內容', 'info');
         }
 
-        function showAlarm(message, type = 'info', duration = 3000) {
-            const existingAlarm = document.querySelector('.alarm-modal');
-            if (existingAlarm) {
-                existingAlarm.remove();
+        // 4. 貼上處理（盡可能使用 Clipboard API）
+        async function pasteFromClipboard() {
+            try {
+                if (navigator.clipboard) {
+                    const text = await navigator.clipboard.readText();
+                    if (text) {
+                        const textarea = document.getElementById('inputText');
+                        textarea.value = text;
+                        processText();
+                        showAlarm('已貼上內容', 'success');
+                        return;
+                    }
+                }
+                // 如果 Clipboard API 不可用或失敗，提醒使用者自行貼上
+                showAlarm('請使用 Ctrl+V / Command+V 快捷鍵貼上', 'info');
+            } catch (err) {
+                console.error('Paste error:', err);
+                showAlarm('請直接在輸入框中貼上內容', 'info');
             }
+        }
 
+        // 5. 在使用者以快捷鍵貼上時，動態處理
+        document.getElementById('inputText').addEventListener('paste', () => {
+            requestAnimationFrame(() => {
+                processText();
+            });
+        });
+
+        // 6. 提示框顯示
+        function showAlarm(message, type = 'info', duration = 3000) {
+            // 移除現有提示
+            const existingAlarm = document.querySelector('.alarm-modal');
+            if (existingAlarm) existingAlarm.remove();
+
+            // 建立新提示框
             const alarmModal = document.createElement('div');
             alarmModal.className = `alarm-modal alarm-${type}`;
 
@@ -302,8 +306,7 @@
 
             const icon = document.createElement('span');
             icon.className = 'alarm-icon';
-            
-            // Updated icon characters
+
             switch (type) {
                 case 'success':
                     icon.textContent = '✓';
@@ -320,7 +323,7 @@
 
             const text = document.createElement('span');
             text.textContent = message;
-            text.style.color = 'black';  // Make text white for better contrast
+            text.style.color = 'black'; // 調整文字顏色
 
             content.appendChild(icon);
             content.appendChild(text);
@@ -337,58 +340,8 @@
             }, duration);
         }
 
-        async function pasteFromClipboard() {
-            try {
-                // 首先嘗試使用 navigator.clipboard API
-                if (navigator.clipboard) {
-                    try {
-                        const text = await navigator.clipboard.readText();
-                        if (text) {
-                            const textarea = document.getElementById('inputText');
-                            textarea.value = text;
-                            processText();
-                            showAlarm('已貼上內容', 'success');
-                            return;
-                        }
-                    } catch (err) {
-                        // 如果 clipboard API 失敗，靜默失敗並使用替代方案
-                        console.log('Clipboard API not available, using fallback');
-                    }
-                }
-
-                // 替代方案：使用 execCommand
-                const textarea = document.getElementById('inputText');
-                textarea.focus();
-                document.execCommand('paste');
-                
-                // 短暫延遲以確保內容已被貼上
-                setTimeout(() => {
-                    if (textarea.value) {
-                        processText();
-                        showAlarm('已貼上內容', 'success');
-                    } else {
-                        showAlarm('請使用 Ctrl+V / Command+V 快捷鍵貼上', 'info');
-                    }
-                }, 100);
-
-            } catch (err) {
-                console.error('Paste error:', err);
-                showAlarm('請直接在輸入框中貼上內容', 'info');
-                document.getElementById('inputText').focus();
-            }
-        }
-
-        // 優化貼上事件處理
-        document.getElementById('inputText').addEventListener('paste', (e) => {
-            // 使用 requestAnimationFrame 來確保在下一幀處理
-            requestAnimationFrame(() => {
-                processText();
-            });
-        });
-
-        // 支持快捷鍵貼上
+        // 7. 針對 CTRL+V / Command+V 聚焦至輸入框
         document.addEventListener('keydown', function(e) {
-            // 支持 Windows (Ctrl+V) 和 Mac (Command+V)
             if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
                 const textarea = document.getElementById('inputText');
                 if (document.activeElement !== textarea) {
@@ -398,5 +351,4 @@
         });
     </script>
 </body>
-</html> 
-
+</html>
