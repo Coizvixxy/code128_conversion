@@ -17,7 +17,7 @@ A simple web tool to generate Code128 barcodes from pickup codes | 一個簡單�
    ```
    Example format | 示例格式:
    Kenny:
-   取件碼 88563043
+   取件码 88563043
    窩蜂自提櫃 | 金利達櫃(窩蜂)
    ```
 3. Barcodes will be generated automatically | 條碼會自動生成
