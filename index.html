@@ -202,59 +202,58 @@
     </div>
 
     <script>
-        // 1. 解析 取件碼
         function extractPickupCode(text) {
-            const match = text.match(/取件码\s*(\d+)/);
-            return match ? match[1] : null;
-        }
+    // Match "取件码" followed by digits OR just digits
+    const match = text.match(/(?:取件码\s*)?(\d{6,})/);
+    return match ? match[1] : null;
+}
 
-        // 2. 主流程：生成條碼
-        function processText() {
-            const input = document.getElementById('inputText').value;
-            const lines = input.split('\n').filter(line => line.trim());
-            const container = document.getElementById('barcodeContainer');
-            container.innerHTML = '';
+function processText() {
+    const input = document.getElementById('inputText').value;
+    const lines = input.split('\n').filter(line => line.trim());
+    const container = document.getElementById('barcodeContainer');
+    container.innerHTML = '';
 
-            let foundAnyCode = false;
+    let foundAnyCode = false;
 
-            lines.forEach(message => {
-                const code = extractPickupCode(message);
-                if (code) {
-                    foundAnyCode = true;
-                    // 建立條碼容器
-                    const barcodeItem = document.createElement('div');
-                    barcodeItem.className = 'barcode-item';
+    lines.forEach(message => {
+        const code = extractPickupCode(message);
+        if (code) {
+            foundAnyCode = true;
+            // Create barcode container
+            const barcodeItem = document.createElement('div');
+            barcodeItem.className = 'barcode-item';
 
-                    // 建立 SVG 區域
-                    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-                    barcodeItem.appendChild(svg);
+            // Create SVG for barcode
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            barcodeItem.appendChild(svg);
 
-                    // 生成條碼
-                    JsBarcode(svg, code, {
-                        format: "CODE128",
-                        width: 2,
-                        height: 100,
-                        displayValue: true,
-                        fontSize: 20,
-                        margin: 10
-                    });
-
-                    // 顯示取件碼文字
-                    const div = document.createElement('div');
-                    div.className = 'code-text';
-                    div.textContent = `取件碼: ${code}`;
-                    barcodeItem.appendChild(div);
-
-                    container.appendChild(barcodeItem);
-                }
+            // Generate barcode
+            JsBarcode(svg, code, {
+                format: "CODE128",
+                width: 2,
+                height: 100,
+                displayValue: true,
+                fontSize: 20,
+                margin: 10
             });
 
-            if (foundAnyCode) {
-                showAlarm('條碼生成成功', 'success');
-            } else {
-                showAlarm('未找到有效的取件碼', 'error');
-            }
+            // Display pickup code as text
+            const div = document.createElement('div');
+            div.className = 'code-text';
+            div.textContent = `取件碼: ${code}`;
+            barcodeItem.appendChild(div);
+
+            container.appendChild(barcodeItem);
         }
+    });
+
+    if (foundAnyCode) {
+        showAlarm('條碼生成成功', 'success');
+    } else {
+        showAlarm('未找到有效的取件碼', 'error');
+    }
+}
 
         // 3. 清除全部內容
         function clearAll() {
